@@ -154,7 +154,7 @@ interface User {
 - `DELETE /api/todos/{id}` - Delete todo
 - `GET /api/users/me` - Get current user
 
-## 🎨 UI Components
+## UI Components
 
 ### Main Navigation (`MainNav.tsx`)
 - Logo and branding
@@ -175,7 +175,7 @@ interface User {
 - Due date tracking with overdue indicators
 - Tag management
 
-## 🔧 Development Scripts
+## Development Scripts
 
 ```bash
 # Development
