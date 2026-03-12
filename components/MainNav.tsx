@@ -1,15 +1,33 @@
 'use client';
 
 import { Bell, Settings, LogOut, User, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { isAuthenticated, logout, getUserFromToken, getCurrentUser } from '@/lib/authenticate';
+import { useRouter } from 'next/navigation';
 
-interface MainNavProps {
-  userName?: string;
-  userEmail?: string;
-}
-
-export default function MainNav({ userName = 'User', userEmail = 'user@example.com' }: MainNavProps) {
+export default function MainNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userName, setUserName] = useState('User');
+  const [userEmail, setUserEmail] = useState('user@example.com');
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      // try decode token first
+      const decoded = getUserFromToken();
+      if (decoded) {
+        if (decoded.name) setUserName(String(decoded.name));
+        if (decoded.email) setUserEmail(String(decoded.email));
+      }
+      // optionally fetch full user object from API
+      void getCurrentUser().then(u => {
+        if (u) {
+          setUserName(u.name);
+          setUserEmail(u.email);
+        }
+      });
+    }
+  }, []);
 
   return (
     <nav className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
@@ -27,44 +45,57 @@ export default function MainNav({ userName = 'User', userEmail = 'user@example.c
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-6">
-            {/* Notifications */}
-            <button className="relative text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
-              <Bell size={20} />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-
-            {/* Settings */}
-            <button className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
-              <Settings size={20} />
-            </button>
-
-            {/* User Menu */}
-            <div className="relative group">
-              <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <User size={18} className="text-white" />
-                </div>
-                <div className="text-left hidden sm:block">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{userName}</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">{userEmail}</p>
-                </div>
-              </button>
-
-              {/* Dropdown Menu */}
-              <div className="absolute right-0 mt-0 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-t-lg">
-                  Profile
-                </a>
-                <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600">
-                  Settings
-                </a>
-                <hr className="my-1 dark:border-gray-600" />
-                <button className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600 rounded-b-lg flex items-center gap-2">
-                  <LogOut size={16} />
-                  Logout
+            {isAuthenticated() ? (
+              <>
+                {/* Notifications */}
+                <button className="relative text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                  <Bell size={20} />
+                  <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
                 </button>
-              </div>
-            </div>
+
+                {/* Settings */}
+                <button className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                  <Settings size={20} />
+                </button>
+
+                {/* User Menu */}
+                <div className="relative group">
+                  <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                      <User size={18} className="text-white" />
+                    </div>
+                    <div className="text-left hidden sm:block">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">{userName}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">{userEmail}</p>
+                    </div>
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  <div className="absolute right-0 mt-0 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-t-lg">
+                      Profile
+                    </a>
+                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      Settings
+                    </a>
+                    <hr className="my-1 dark:border-gray-600" />
+                    <button onClick={() => { logout(); router.push('/login'); }} className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600 rounded-b-lg flex items-center gap-2">
+                      <LogOut size={16} />
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <a href="/login" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                  Login
+                </a>
+                <a href="/register" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                  Register
+                </a>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -79,20 +110,33 @@ export default function MainNav({ userName = 'User', userEmail = 'user@example.c
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-200 dark:border-gray-700 py-4 space-y-2">
-            <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-              Notifications
-            </a>
-            <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-              Settings
-            </a>
-            <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-              Profile
-            </a>
-            <hr className="my-2 dark:border-gray-700" />
-            <button className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-700 rounded flex items-center gap-2">
-              <LogOut size={16} />
-              Logout
-            </button>
+            {isAuthenticated() ? (
+              <>
+                <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                  Notifications
+                </a>
+                <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                  Settings
+                </a>
+                <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                  Profile
+                </a>
+                <hr className="my-2 dark:border-gray-700" />
+                <button onClick={() => { logout(); router.push('/login'); }} className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-700 rounded flex items-center gap-2">
+                  <LogOut size={16} />
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <a href="/login" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                  Login
+                </a>
+                <a href="/register" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                  Register
+                </a>
+              </>
+            )}
           </div>
         )}
       </div>

@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { isAuthenticated, getToken } from '@/lib/authenticate';
 import { Trash2, Plus, Check, X, Flag, Calendar } from 'lucide-react';
 
 type TodoStatus = 'open' | 'done' | 'archived';
@@ -18,6 +20,9 @@ interface Todo {
 }
 
 export default function Home() {
+  const router = useRouter();
+  const API = process.env.NEXT_PUBLIC_API_URL || '';
+
   const [todos, setTodos] = useState<Todo[]>([]);
   const [activeFilter, setActiveFilter] = useState<TodoStatus>('open');
   const [title, setTitle] = useState('');
@@ -27,38 +32,99 @@ export default function Home() {
   const [tags, setTags] = useState('');
   const [showForm, setShowForm] = useState(false);
 
-  const addTodo = () => {
-    if (title.trim()) {
-      const newTodo: Todo = {
-        id: Date.now().toString(),
+  // helper to reload list from backend
+  const fetchTodos = async () => {
+    try {
+      const token = getToken();
+      const res = await fetch(`${API}/api/v1/todos`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const data = await res.json();
+      setTodos(data.items || []);
+    } catch (err) {
+      console.error('fetchTodos failed', err);
+    }
+  };
+
+  const addTodo = async () => {
+    if (!title.trim()) return;
+    try {
+      const body = {
         title,
         description: description || null,
-        status: 'open',
         priority,
         due_at: dueDate || null,
         tags: tags.split(',').filter(t => t.trim()),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       };
-      setTodos([...todos, newTodo]);
+      const token = getToken();
+      const res = await fetch(`${API}/api/v1/todos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setTodos(prev => [...prev, created]);
+      }
       setTitle('');
       setDescription('');
       setPriority(3);
       setDueDate('');
       setTags('');
       setShowForm(false);
+    } catch (err) {
+      console.error('addTodo failed', err);
     }
   };
 
-  const updateTodoStatus = (id: string, status: TodoStatus) => {
-    setTodos(todos.map(todo =>
-      todo.id === id ? { ...todo, status, updated_at: new Date().toISOString() } : todo
-    ));
+  const updateTodoStatus = async (id: string, status: TodoStatus) => {
+    try {
+      const token = getToken();
+      const res = await fetch(`${API}/api/v1/todos/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setTodos(todos.map(todo =>
+          todo.id === id ? updated : todo
+        ));
+      }
+    } catch (err) {
+      console.error('updateTodoStatus failed', err);
+    }
   };
 
-  const deleteTodo = (id: string) => {
-    setTodos(todos.filter(todo => todo.id !== id));
+  const deleteTodo = async (id: string) => {
+    try {
+      const token = getToken();
+      const res = await fetch(`${API}/api/v1/todos/${id}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (res.ok) {
+        setTodos(todos.filter(todo => todo.id !== id));
+      }
+    } catch (err) {
+      console.error('deleteTodo failed', err);
+    }
   };
+
+  // load on first render
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.push('/login');
+      return;
+    }
+    void fetchTodos();
+  }, []);
 
   const filteredTodos = todos.filter(todo => todo.status === activeFilter);
   const stats = {

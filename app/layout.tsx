@@ -29,7 +29,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 dark:bg-gray-900`}
       >
-        <MainNav userName="John Doe" userEmail="john@example.com" />
+        <MainNav />
         <div className="flex">
           <Sidebar activeView="all" />
           <main className="flex-1">

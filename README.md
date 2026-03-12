@@ -153,6 +153,8 @@ interface User {
 - `PUT /api/todos/{id}` - Update todo
 - `DELETE /api/todos/{id}` - Delete todo
 - `GET /api/users/me` - Get current user
+- `POST /api/v1/auth/register` - Register with name, email, password
+- `POST /api/v1/auth/login` - Obtain JWT token (form encoded username/email and password)
 
 ## UI Components
 
