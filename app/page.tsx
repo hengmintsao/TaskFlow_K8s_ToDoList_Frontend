@@ -230,7 +230,7 @@ export default function Home() {
         priority: form.priority,
         due_at: form.dueAt ? new Date(form.dueAt).toISOString() : null,
         tags: normalizeTags(form.tags),
-        ...(editingTodoId ? { status: form.status } : {}),
+        status: form.status,
       };
 
       const response = await fetch(
@@ -533,7 +533,6 @@ export default function Home() {
                     value={form.status}
                     onChange={(event) => updateForm('status', event.target.value as TodoStatus)}
                     className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500"
-                    disabled={!editingTodoId}
                   >
                     <option value="open">Open</option>
                     <option value="done">Done</option>
