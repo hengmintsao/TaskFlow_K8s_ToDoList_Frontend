@@ -48,6 +48,7 @@ export const getToken = (): string | null => {
 export const setToken = (token: string): void => {
   if (typeof window !== "undefined") {
     localStorage.setItem("token", token);
+    window.dispatchEvent(new Event('auth-changed'));
   }
 };
 
@@ -57,6 +58,7 @@ export const setToken = (token: string): void => {
 export const removeToken = (): void => {
   if (typeof window !== "undefined") {
     localStorage.removeItem("token");
+    window.dispatchEvent(new Event('auth-changed'));
   }
 };
 
@@ -129,11 +131,11 @@ export const registerUser = async (name: string, email: string, password: string
       const err = await res.json();
       // handle pydantic validation errors
       if (err.detail && Array.isArray(err.detail)) {
-        errMsg = err.detail.map((d: any) => `${d.loc?.[1] || 'Field'}: ${d.msg}`).join('; ');
+        errMsg = err.detail.map((d: { loc?: unknown[]; msg?: string }) => `${typeof d.loc?.[1] === 'string' ? d.loc[1] : 'Field'}: ${d.msg || 'Invalid value'}`).join('; ');
       } else if (err.detail) {
         errMsg = String(err.detail);
       }
-    } catch (_e) {
+    } catch {
       // maybe HTML response, ignore
     }
     throw new Error(errMsg);
