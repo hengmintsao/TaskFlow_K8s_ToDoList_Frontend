@@ -9,16 +9,27 @@ export default function MainNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userName, setUserName] = useState('User');
   const [userEmail, setUserEmail] = useState('user@example.com');
+  const [authenticated, setAuthenticated] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    if (isAuthenticated()) {
+    const syncAuthState = () => {
+      const loggedIn = isAuthenticated();
+      setAuthenticated(loggedIn);
+
+      if (!loggedIn) {
+        setUserName('User');
+        setUserEmail('user@example.com');
+        return;
+      }
+
       // try decode token first
       const decoded = getUserFromToken();
       if (decoded) {
         if (decoded.name) setUserName(String(decoded.name));
         if (decoded.email) setUserEmail(String(decoded.email));
       }
+
       // optionally fetch full user object from API
       void getCurrentUser().then(u => {
         if (u) {
@@ -26,7 +37,17 @@ export default function MainNav() {
           setUserEmail(u.email);
         }
       });
-    }
+    };
+
+    syncAuthState();
+
+    window.addEventListener('auth-changed', syncAuthState);
+    window.addEventListener('storage', syncAuthState);
+
+    return () => {
+      window.removeEventListener('auth-changed', syncAuthState);
+      window.removeEventListener('storage', syncAuthState);
+    };
   }, []);
 
   return (
@@ -45,7 +66,7 @@ export default function MainNav() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-6">
-            {isAuthenticated() ? (
+            {authenticated ? (
               <>
                 {/* Notifications */}
                 <button className="relative text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
@@ -110,7 +131,7 @@ export default function MainNav() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-200 dark:border-gray-700 py-4 space-y-2">
-            {isAuthenticated() ? (
+            {authenticated ? (
               <>
                 <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
                   Notifications
