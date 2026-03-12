@@ -22,13 +22,15 @@ export default function RegisterPage() {
       // auto-login after register
       await loginUser(email, password);
       router.push('/');
-    } catch (err: any) {
-      if (err.message.includes('Email already registered')) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Registration failed';
+
+      if (message.includes('Email already registered')) {
         setError('This email is already registered');
-      } else if (err.message.includes('Registration failed')) {
+      } else if (message.includes('Registration failed')) {
         setError('Registration failed. Please check your input and try again.');
       } else {
-        setError(err.message || 'Registration failed');
+        setError(message);
       }
     }
   };

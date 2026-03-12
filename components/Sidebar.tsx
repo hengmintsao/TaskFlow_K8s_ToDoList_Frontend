@@ -1,113 +1,144 @@
 'use client';
 
-import { ListTodo, Tag, Calendar, Archive, Settings, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { Archive, Calendar, CheckCircle2, ListTodo, Plus, Tag } from 'lucide-react';
+
+export type SidebarView = 'all' | 'open' | 'today' | 'done' | 'archived';
 
 interface SidebarProps {
-  activeView?: string;
-  onViewChange?: (view: string) => void;
+  activeView: SidebarView;
+  counts: Record<SidebarView, number>;
+  tags: string[];
+  activeTag: string | null;
+  tagSearch: string;
+  onViewChange: (view: SidebarView) => void;
+  onTagSelect: (tag: string | null) => void;
+  onTagSearchChange: (value: string) => void;
+  onCreateTask: () => void;
 }
 
-export default function Sidebar({ activeView = 'all', onViewChange }: SidebarProps) {
-  const [showCreateCategory, setShowCreateCategory] = useState(false);
-  const [newCategory, setNewCategory] = useState('');
+const menuItems: Array<{
+  id: SidebarView;
+  label: string;
+  icon: typeof ListTodo;
+}> = [
+  { id: 'all', label: 'All Tasks', icon: ListTodo },
+  { id: 'open', label: 'Open', icon: ListTodo },
+  { id: 'today', label: 'Today', icon: Calendar },
+  { id: 'done', label: 'Done', icon: CheckCircle2 },
+  { id: 'archived', label: 'Archived', icon: Archive },
+];
 
-  const menuItems = [
-    { id: 'all', label: 'All Tasks', icon: ListTodo },
-    { id: 'today', label: 'Today', icon: Calendar },
-    { id: 'tags', label: 'Tags', icon: Tag },
-    { id: 'archived', label: 'Archived', icon: Archive },
-  ];
-
-  const handleAddCategory = () => {
-    if (newCategory.trim()) {
-      // TODO: Connect to backend
-      setNewCategory('');
-      setShowCreateCategory(false);
-    }
-  };
-
+export default function Sidebar({
+  activeView,
+  counts,
+  tags,
+  activeTag,
+  tagSearch,
+  onViewChange,
+  onTagSelect,
+  onTagSearchChange,
+  onCreateTask,
+}: SidebarProps) {
   return (
-    <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-screen overflow-y-auto hidden md:flex flex-col">
-      {/* Main Menu */}
-      <div className="flex-1 py-6 px-4">
-        <h2 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-4">
-          Menu
-        </h2>
-        <nav className="space-y-2">
-          {menuItems.map(item => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => onViewChange?.(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
-                  activeView === item.id
-                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                <Icon size={18} />
-                <span className="font-medium">{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Categories Section */}
-      <div className="border-t border-gray-200 dark:border-gray-700 py-6 px-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-            Categories
-          </h2>
-          <button
-            onClick={() => setShowCreateCategory(!showCreateCategory)}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-          >
-            <Plus size={16} />
-          </button>
-        </div>
-
-        {/* Add Category Form */}
-        {showCreateCategory && (
-          <div className="mb-4 space-y-2">
-            <input
-              type="text"
-              value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
-              placeholder="Category name..."
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
-            />
-            <button
-              onClick={handleAddCategory}
-              className="w-full px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
-            >
-              Add
-            </button>
-          </div>
-        )}
-
-        {/* Categories List */}
-        <div className="space-y-1">
-          {['Work', 'Personal', 'Shopping'].map(category => (
-            <button
-              key={category}
-              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Settings */}
-      <div className="border-t border-gray-200 dark:border-gray-700 py-4 px-4">
-        <button className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-          <Settings size={18} />
-          <span className="font-medium">Settings</span>
+    <aside className="hidden w-80 shrink-0 border-r border-slate-200 bg-[#0f172a] text-slate-100 lg:flex lg:flex-col">
+      <div className="flex-1 px-5 py-6">
+        <button
+          onClick={onCreateTask}
+          className="mb-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-500 px-4 py-3 font-semibold text-white transition hover:bg-blue-400"
+        >
+          <Plus size={18} />
+          Create Task
         </button>
+
+        <div className="mb-8">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+            Menu
+          </p>
+          <nav className="space-y-2">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeView === item.id;
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onViewChange(item.id)}
+                  className={`flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left transition ${
+                    isActive
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-950/40'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <span className="flex items-center gap-3">
+                    <Icon size={18} />
+                    <span className="font-medium">{item.label}</span>
+                  </span>
+                  <span
+                    className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                      isActive ? 'bg-white/20 text-white' : 'bg-slate-700 text-slate-300'
+                    }`}
+                  >
+                    {counts[item.id]}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Tags</p>
+            {(activeTag || tagSearch) && (
+              <button
+                onClick={() => {
+                  onTagSelect(null);
+                  onTagSearchChange('');
+                }}
+                className="text-xs font-medium text-slate-400 transition hover:text-white"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          <input
+            type="text"
+            value={tagSearch}
+            onChange={(event) => onTagSearchChange(event.target.value)}
+            placeholder="Search tags"
+            className="mb-3 w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-sky-400"
+          />
+
+          <div className="space-y-2">
+            {tags.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-700 px-4 py-5 text-sm text-slate-400">
+                {tagSearch
+                  ? 'No tags matched your search.'
+                  : 'Create a task with tags and it will appear here.'}
+              </div>
+            ) : (
+              tags.map((tag) => {
+                const isActive = activeTag === tag;
+
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => onTagSelect(isActive ? null : tag)}
+                    className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition ${
+                      isActive
+                        ? 'bg-sky-500/20 text-sky-200 ring-1 ring-sky-400/40'
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <Tag size={16} />
+                    <span className="font-medium">#{tag}</span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
       </div>
     </aside>
   );

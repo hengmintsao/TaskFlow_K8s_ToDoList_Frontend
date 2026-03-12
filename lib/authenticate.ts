@@ -1,4 +1,5 @@
 import { jwtDecode } from "jwt-decode";
+import { buildApiUrl, readErrorMessage } from "@/lib/api";
 
 interface DecodedToken {
   exp?: number;
@@ -97,22 +98,18 @@ export const logout = (): void => {
   removeToken();
 };
 
-// helper to call backend auth endpoints
-// default to localhost when running outside of Docker
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
 export const loginUser = async (email: string, password: string) => {
   const body = new URLSearchParams();
   body.append('username', email);
   body.append('password', password);
 
-  const res = await fetch(`${API_URL}/api/v1/auth/login`, {
+  const res = await fetch(buildApiUrl('/api/v1/auth/login'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: body.toString(),
   });
   if (!res.ok) {
-    throw new Error('Login failed');
+    throw new Error(await readErrorMessage(res, 'Login failed'));
   }
   const data = await res.json();
   setToken(data.access_token);
@@ -120,25 +117,13 @@ export const loginUser = async (email: string, password: string) => {
 };
 
 export const registerUser = async (name: string, email: string, password: string) => {
-  const res = await fetch(`${API_URL}/api/v1/auth/register`, {
+  const res = await fetch(buildApiUrl('/api/v1/auth/register'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, email, password }),
   });
   if (!res.ok) {
-    let errMsg = 'Registration failed';
-    try {
-      const err = await res.json();
-      // handle pydantic validation errors
-      if (err.detail && Array.isArray(err.detail)) {
-        errMsg = err.detail.map((d: { loc?: unknown[]; msg?: string }) => `${typeof d.loc?.[1] === 'string' ? d.loc[1] : 'Field'}: ${d.msg || 'Invalid value'}`).join('; ');
-      } else if (err.detail) {
-        errMsg = String(err.detail);
-      }
-    } catch {
-      // maybe HTML response, ignore
-    }
-    throw new Error(errMsg);
+    throw new Error(await readErrorMessage(res, 'Registration failed'));
   }
   return await res.json();
 };
@@ -146,7 +131,7 @@ export const registerUser = async (name: string, email: string, password: string
 export const getCurrentUser = async () => {
   const token = getToken();
   if (!token) return null;
-  const res = await fetch(`${API_URL}/api/v1/auth/me`, {
+  const res = await fetch(buildApiUrl('/api/v1/auth/me'), {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) return null;
