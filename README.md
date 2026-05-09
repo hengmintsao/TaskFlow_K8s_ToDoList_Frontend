@@ -199,7 +199,7 @@ docker build -t taskflow:prod .
 # Run with environment variables
 docker run -p 3000:3000 \
   -e NODE_ENV=production \
-  -e API_URL=https://your-api.com \
+  -e NEXT_PUBLIC_API_URL=https://your-api.com \
   taskflow:prod
 ```
 
@@ -215,4 +215,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [FastAPI](https://fastapi.tiangolo.com/) - Backend framework
 
 ---
-

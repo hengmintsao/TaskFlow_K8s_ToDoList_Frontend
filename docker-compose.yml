@@ -9,8 +9,8 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      # point front end to backend API inside compose network
-      - NEXT_PUBLIC_API_URL=http://api:8000
+      # If your backend runs on the host at :8000, the browser can reach it via localhost.
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]

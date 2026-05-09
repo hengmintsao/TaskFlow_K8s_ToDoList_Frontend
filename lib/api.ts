@@ -11,7 +11,11 @@ export const getApiBaseUrl = () => {
       return DEFAULT_SERVER_API_URL;
     }
 
-    return `${window.location.protocol}//${window.location.hostname}:${DEFAULT_BROWSER_API_PORT}`;
+    // In production we usually want same-origin requests and let the Next.js
+    // server proxy `/api/*` to the real backend (avoids CORS and internal DNS).
+    // If you need a different host/port (e.g. local backend on :8000), set
+    // NEXT_PUBLIC_API_URL explicitly.
+    return window.location.origin;
   }
 
   if (configured.startsWith('/')) {
@@ -22,14 +26,17 @@ export const getApiBaseUrl = () => {
     const url = new URL(configured);
 
     if (typeof window !== 'undefined' && (url.hostname === 'api' || url.hostname === 'backend')) {
-      url.hostname = window.location.hostname || 'localhost';
+      // `api` / `backend` are usually internal service DNS names. Browsers cannot
+      // resolve them, so treat them as "same origin" and rely on proxy/rewrites.
+      const prefix = trimTrailingSlash(url.pathname || '');
+      return `${window.location.origin}${prefix && prefix !== '/' ? prefix : ''}`;
     }
 
     return trimTrailingSlash(url.toString());
   } catch {
     return typeof window === 'undefined'
       ? DEFAULT_SERVER_API_URL
-      : `${window.location.protocol}//${window.location.hostname}:${DEFAULT_BROWSER_API_PORT}`;
+      : window.location.origin;
   }
 };
 
